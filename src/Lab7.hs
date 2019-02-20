@@ -30,9 +30,8 @@ ch p = MkParser $ \xs -> case xs of
 
 instance Functor Parser where
     fmap f (MkParser g) =
-        MkParser $ \xs -> case g xs of
-          (Just (x, y)) -> Just (f x, y)
-          _             -> Nothing
+        MkParser $ \xs -> g xs >>= \(x,y) -> Just (f x, y)
+
 
 --------------------------------------------------------------------------------
 -- Parsers are applicative functors
@@ -40,11 +39,9 @@ instance Functor Parser where
 instance Applicative Parser where
     pure x = MkParser $ \y -> Just (x, y)
 
-    (MkParser a) <*> p = MkParser (\xs -> case a xs of
-        Nothing      -> Nothing
-        Just (f, ys) -> let (MkParser b) = p in case b ys of
-            Nothing      -> Nothing
-            Just (x, zs) -> Just (f x, zs))
+    (MkParser a) <*> p = MkParser (\xs -> a xs >>=
+        \(f, ys) -> let (MkParser b) = p in
+          b ys >>= \(x, zs) -> Just (f x, zs))
 
 --------------------------------------------------------------------------------
 -- Alternative
@@ -61,10 +58,12 @@ class Applicative f => Alternative f where
     many p = some p <|> pure []
 
 instance Alternative Parser where
-    empty = undefined
+    empty = MkParser $ const Nothing
 
     (MkParser a) <|> (MkParser b) =
-        undefined
+        MkParser (\xs -> case a xs of
+          Nothing -> b xs
+          r       -> r)
 
 --------------------------------------------------------------------------------
 
