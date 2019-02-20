@@ -80,10 +80,11 @@ whitespace :: Parser String
 whitespace = many (oneOf [' ', '\t', '\n', '\r'])
 
 token :: Parser a -> Parser a
-token p = undefined
+token p = whitespace *> p
+
 
 between :: Parser open -> Parser close -> Parser a -> Parser a
-between open close p = undefined
+between open close p = open *> p <* close
 
 --------------------------------------------------------------------------------
 
@@ -101,13 +102,13 @@ eval (Add l r) = eval l + eval r
 --------------------------------------------------------------------------------
 
 lparen :: Parser Char
-lparen = undefined
+lparen = token (ch (=='('))
 
 rparen :: Parser Char
-rparen = undefined
+rparen = token (ch (==')'))
 
 plus :: Parser Char
-plus = undefined
+plus = token (ch (=='+'))
 
 val :: Parser Expr
 val = Val <$> token nat
